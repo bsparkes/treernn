@@ -35,7 +35,7 @@ class RNN_Model():
   def load_data(self):
     """Loads train/dev/test data and builds vocabulary."""
     self.train_data, self.dev_data, self.test_data = tr.simplified_data(
-        700, 100, 200)
+        51, 100, 200)
 
     # build vocab from training data
     self.vocab = Vocab()
@@ -55,9 +55,9 @@ class RNN_Model():
     if predict_only_root:
       node_tensors = node_tensors[tree.root]
     else:
-      node_tensors = [tensor for node, tensor in node_tensors.iteritems()
+      node_tensors = [tensor for node, tensor in node_tensors.items()
                       if node.label != 2]
-      node_tensors = tf.concat(0, node_tensors)
+      node_tensors = tf.concat(node_tensors, 0)
     return self.add_projections(node_tensors)
 
   def add_model_vars(self):
@@ -120,8 +120,7 @@ class RNN_Model():
     else:
       node_tensors.update(self.add_model(node.left))
       node_tensors.update(self.add_model(node.right))
-      node_input = tf.concat(
-          1, [node_tensors[node.left], node_tensors[node.right]])
+      node_input = tf.concat([node_tensors[node.left], node_tensors[node.right]], 1)
       curr_node_tensor = tf.nn.relu(tf.matmul(node_input, W1) + b1)
 
     node_tensors[node] = curr_node_tensor
@@ -154,7 +153,7 @@ class RNN_Model():
         loss: tensor 0-D
     """
     softmax_loss = tf.reduce_sum(
-        tf.nn.sparse_softmax_cross_entropy_with_logits(logits, tf.constant(
+        tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits, labels=tf.constant(
             labels)))
     with tf.variable_scope('Composition', reuse=True):
       W1 = tf.get_variable('W1')
@@ -204,7 +203,7 @@ class RNN_Model():
     """Make predictions from the provided model."""
     results = []
     losses = []
-    for i in xrange(int(math.ceil(len(trees) / float(RESET_AFTER)))):
+    for i in range(int(math.ceil(len(trees) / float(RESET_AFTER)))):
       with tf.Graph().as_default(), tf.Session() as sess:
         self.add_model_vars()
         saver = tf.train.Saver()
@@ -228,13 +227,13 @@ class RNN_Model():
       with tf.Graph().as_default(), tf.Session() as sess:
         self.add_model_vars()
         if new_model:
-          init = tf.initialize_all_variables()
+          init = tf.global_variables_initializer()
           sess.run(init)
           new_model = False
         else:
           saver = tf.train.Saver()
           saver.restore(sess, SAVE_DIR + '%s.temp' % self.config.model_name)
-        for _ in xrange(RESET_AFTER):
+        for _ in range(RESET_AFTER):
           if step >= len(self.train_data):
             break
           tree = self.train_data[step]
@@ -264,11 +263,11 @@ class RNN_Model():
     train_acc = np.equal(train_preds, train_labels).mean()
     val_acc = np.equal(val_preds, val_labels).mean()
 
-    print
-    print 'Training acc (only root node): {}'.format(train_acc)
-    print 'Valiation acc (only root node): {}'.format(val_acc)
-    print self.make_conf(train_labels, train_preds)
-    print self.make_conf(val_labels, val_preds)
+    print('\n')
+    print('Training acc (only root node): {}'.format(train_acc))
+    print('Valiation acc (only root node): {}'.format(val_acc))
+    print(self.make_conf(train_labels, train_preds))
+    print(self.make_conf(val_labels, val_preds))
     return train_acc, val_acc, loss_history, np.mean(val_losses)
 
   def train(self, verbose=True):
@@ -279,8 +278,8 @@ class RNN_Model():
     best_val_loss = float('inf')
     best_val_epoch = 0
     stopped = -1
-    for epoch in xrange(self.config.max_epochs):
-      print 'epoch %d' % epoch
+    for epoch in range(self.config.max_epochs):
+      print('epoch %d' % epoch)
       if epoch == 0:
         train_acc, val_acc, loss_history, val_loss = self.run_epoch(
             new_model=True)
@@ -294,13 +293,15 @@ class RNN_Model():
       epoch_loss = np.mean(loss_history)
       if epoch_loss > prev_epoch_loss * self.config.anneal_threshold:
         self.config.lr /= self.config.anneal_by
-        print 'annealed lr to %f' % self.config.lr
+        print('annealed lr to %f' % self.config.lr)
       prev_epoch_loss = epoch_loss
 
       #save if model has improved on val
       if val_loss < best_val_loss:
-        shutil.copyfile(SAVE_DIR + '%s.temp' % self.config.model_name,
-                        SAVE_DIR + '%s' % self.config.model_name)
+        shutil.copy2(SAVE_DIR + '%s.temp.meta' % self.config.model_name,
+                        SAVE_DIR + '%s.meta' % self.config.model_name)
+        shutil.copy2(SAVE_DIR + '%s.temp.index' % self.config.model_name,
+                        SAVE_DIR + '%s.index' % self.config.model_name)
         best_val_loss = val_loss
         best_val_epoch = epoch
 
@@ -312,7 +313,7 @@ class RNN_Model():
       sys.stdout.write('\r')
       sys.stdout.flush()
 
-    print '\n\nstopped at %d\n' % stopped
+    print('\n\nstopped at %d\n' % stopped)
     return {
         'loss_history': complete_loss_history,
         'train_acc_history': train_acc_history,
@@ -321,7 +322,7 @@ class RNN_Model():
 
   def make_conf(self, labels, predictions):
     confmat = np.zeros([2, 2])
-    for l, p in itertools.izip(labels, predictions):
+    for l, p in zip(labels, predictions):
       confmat[l, p] += 1
     return confmat
 
@@ -347,7 +348,7 @@ def test_RNN():
   model = RNN_Model(config)
   start_time = time.time()
   stats = model.train(verbose=True)
-  print 'Training time: {}'.format(time.time() - start_time)
+  print('Training time: {}'.format(time.time() - start_time))
 
   plot_loss_history(stats)
 
@@ -358,17 +359,17 @@ def test_RNN():
       get_loss=True)
   val_labels = [t.root.label for t in model.dev_data]
   val_acc = np.equal(val_preds, val_labels).mean()
-  print val_acc
+  print(val_acc)
 
-  print 'Test'
-  print '=-=-='
+  print('Test')
+  print('=-=-=')
   predictions, _ = model.predict(model.test_data,
                                  SAVE_DIR + '%s.temp' % model.config.model_name)
   labels = [t.root.label for t in model.test_data]
-  print model.make_conf(labels, predictions)
+  print(model.make_conf(labels, predictions))
   test_acc = np.equal(predictions, labels).mean()
-  print 'Test acc: {}'.format(test_acc)
-  print 'Time to run inference on dev+test: {}'.format(time.time() - start_time)
+  print('Test acc: {}'.format(test_acc))
+  print('Time to run inference on dev+test: {}'.format(time.time() - start_time))
 
 
 if __name__ == '__main__':

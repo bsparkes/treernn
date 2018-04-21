@@ -83,7 +83,7 @@ class Tree:
 def leftTraverse(node, nodeFn=None, args=None):
     """
     Recursive function traverses tree
-    from left to right. 
+    from left to right.
     Calls nodeFn at each node
     """
     if node is None:
@@ -117,7 +117,7 @@ def loadTrees(dataSet='train'):
     Loads training trees. Maps leaf node words to word ids.
     """
     file = 'trees/%s.txt' % dataSet
-    print "Loading %s trees.." % dataSet
+    print("Loading %s trees.." % dataSet)
     with open(file, 'r') as fid:
         trees = [Tree(l) for l in fid.readlines()]
 
@@ -127,7 +127,7 @@ def simplified_data(num_train, num_dev, num_test):
     rndstate = random.getstate()
     random.seed(0)
     trees = loadTrees('train') + loadTrees('dev') + loadTrees('test')
-    
+
     #filter extreme trees
     pos_trees = [t for t in trees if t.root.label==4]
     neg_trees = [t for t in trees if t.root.label==0]
@@ -135,14 +135,15 @@ def simplified_data(num_train, num_dev, num_test):
     #binarize labels
     binarize_labels(pos_trees)
     binarize_labels(neg_trees)
-    
+
     #split into train, dev, test
-    print len(pos_trees), len(neg_trees)
+    print(len(pos_trees), len(neg_trees))
     pos_trees = sorted(pos_trees, key=lambda t: len(t.get_words()))
     neg_trees = sorted(neg_trees, key=lambda t: len(t.get_words()))
-    num_train/=2
-    num_dev/=2
-    num_test/=2
+    num_train =  int(num_train/2)
+    num_dev = int(num_dev/2)
+    num_test = int(num_test/2)
+    print(num_train)
     train = pos_trees[:num_train] + neg_trees[:num_train]
     dev = pos_trees[num_train : num_train+num_dev] + neg_trees[num_train : num_train+num_dev]
     test = pos_trees[num_train+num_dev : num_train+num_dev+num_test] + neg_trees[num_train+num_dev : num_train+num_dev+num_test]

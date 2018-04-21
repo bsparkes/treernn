@@ -35,9 +35,7 @@ class RecursiveNetStaticGraph():
     self.config = config
 
     # Load train data and build vocabulary
-    self.train_data, self.dev_data, self.test_data = tree.simplified_data(700,
-                                                                          100,
-                                                                          200)
+    self.train_data, self.dev_data, self.test_data = tree.simplified_data(700,100,200)
     self.vocab = utils.Vocab()
     train_sents = [t.get_words() for t in self.train_data]
     self.vocab.construct(list(itertools.chain.from_iterable(train_sents)))
@@ -197,11 +195,10 @@ class RecursiveNetStaticGraph():
     train_acc = np.equal(train_preds, train_labels).mean()
     val_acc = np.equal(val_preds, val_labels).mean()
 
-    print
-    print 'Training acc (only root node): {}'.format(train_acc)
-    print 'Valiation acc (only root node): {}'.format(val_acc)
-    print self.make_conf(train_labels, train_preds)
-    print self.make_conf(val_labels, val_preds)
+    print('Training acc (only root node): {}'.format(train_acc))
+    print('Valiation acc (only root node): {}'.format(val_acc))
+    print(self.make_conf(train_labels, train_preds))
+    print(self.make_conf(val_labels, val_preds))
     return train_acc, val_acc, loss_history, np.mean(val_losses)
 
   def train(self, verbose=True):
@@ -213,7 +210,7 @@ class RecursiveNetStaticGraph():
     best_val_epoch = 0
     stopped = -1
     for epoch in xrange(self.config.max_epochs):
-      print 'epoch %d' % epoch
+      print('epoch %d' % epoch)
       if epoch == 0:
         train_acc, val_acc, loss_history, val_loss = self.run_epoch(
             new_model=True)
@@ -227,7 +224,7 @@ class RecursiveNetStaticGraph():
       epoch_loss = np.mean(loss_history)
       if epoch_loss > prev_epoch_loss * self.config.anneal_threshold:
         self.config.lr /= self.config.anneal_by
-        print 'annealed lr to %f' % self.config.lr
+        print('annealed lr to %f' % self.config.lr)
       prev_epoch_loss = epoch_loss
 
       #save if model has improved on val
@@ -245,7 +242,7 @@ class RecursiveNetStaticGraph():
       sys.stdout.write('\r')
       sys.stdout.flush()
 
-    print '\n\nstopped at %d\n' % stopped
+    print('\n\nstopped at %d\n' % stopped)
     return {
         'loss_history': complete_loss_history,
         'train_acc_history': train_acc_history,
@@ -279,7 +276,7 @@ def test_RNN():
 
   start_time = time.time()
   stats = model.train(verbose=True)
-  print 'Training time: {}'.format(time.time() - start_time)
+  print('Training time: {}'.format(time.time() - start_time))
 
   plot_loss_history(stats)
 
@@ -290,18 +287,18 @@ def test_RNN():
       get_loss=True)
   val_labels = [t.root.label for t in model.dev_data]
   val_acc = np.equal(val_preds, val_labels).mean()
-  print val_acc
+  print(val_acc)
 
-  print '-' * 20
-  print 'Test'
+  print('-' * 20)
+  print('Test')
   predictions, _ = model.predict(model.test_data,
                                  SAVE_DIR + '%s.temp' % model.config.model_name)
   labels = [t.root.label for t in model.test_data]
-  print model.make_conf(labels, predictions)
+  print(model.make_conf(labels, predictions))
   test_acc = np.equal(predictions, labels).mean()
-  print 'Test acc: {}'.format(test_acc)
-  print 'Inference time, dev+test: {}'.format(time.time() - start_time)
-  print '-' * 20
+  print('Test acc: {}'.format(test_acc))
+  print('Inference time, dev+test: {}'.format(time.time() - start_time))
+  print('-' * 20)
 
 
 if __name__ == '__main__':
