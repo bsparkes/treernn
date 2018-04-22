@@ -7,7 +7,8 @@ import matplotlib.pyplot as plt
 import tensorflow as tf
 
 import tree as tr
-from utils import Vocab
+import utils
+# from utils import Vocab, scores
 
 RESET_AFTER = 50
 MODEL_STR = 'rnn_embed=%d_l2=%f_lr=%f.weights'
@@ -38,7 +39,7 @@ class RNN_Model():
         100, 100, 200)
 
     # build vocab from training data
-    self.vocab = Vocab()
+    self.vocab = utils.Vocab()
     train_sents = [t.get_words() for t in self.train_data]
     self.vocab.construct(list(itertools.chain.from_iterable(train_sents)))
 
@@ -372,13 +373,9 @@ def test_RNN():
   predictions, _ = model.predict(model.test_data,
                                  SAVE_DIR + '%s.temp' % model.config.model_name)
   labels = [t.root.label for t in model.test_data]
-  print('labels:')
-  print(labels)
-  print('and predictions')
-  print(predictions)
-  print(len(predictions))
-  print('and the rest')
-  print(model.make_conf(labels, predictions))
+  confmat = model.make_conf(labels, predictions)
+  print(confmat)
+  utils.scores(confmat)
   test_acc = np.equal(predictions, labels).mean()
   print('Test acc: {}'.format(test_acc))
   print('Time to run inference on dev+test: {}'.format(time.time() - start_time))

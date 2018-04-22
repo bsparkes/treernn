@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import tensorflow as tf
 
 import utils
+
 import tree
 
 MODEL_STR = 'rnn_embed=%d_l2=%f_lr=%f.weights'
@@ -166,7 +167,7 @@ class RecursiveNetStaticGraph():
     random.shuffle(self.train_data)
     with tf.Session() as sess:
       if new_model:
-        sess.run(tf.initialize_all_variables())
+        sess.run(tf.global_variables_initializer())
       else:
         saver = tf.train.Saver()
         saver.restore(sess, SAVE_DIR + '%s.temp' % self.config.model_name)
@@ -267,7 +268,6 @@ def plot_loss_history(stats):
   plt.savefig('loss_history.png')
   plt.show()
 
-
 def test_RNN():
   """Test RNN model implementation.
   """
@@ -281,7 +281,7 @@ def test_RNN():
   stats = model.train(verbose=True)
   print('Training time: {}'.format(time.time() - start_time))
 
-  plot_loss_history(stats)
+  # plot_loss_history(stats)
 
   start_time = time.time()
   val_preds, val_losses = model.predict(
@@ -297,12 +297,14 @@ def test_RNN():
   predictions, _ = model.predict(model.test_data,
                                  SAVE_DIR + '%s.temp' % model.config.model_name)
   labels = [t.root.label for t in model.test_data]
-  print(model.make_conf(labels, predictions))
+  confmat = model.make_conf(labels, predictions)
+  print(confmat)
+  utils.scores(confmat)
+
   test_acc = np.equal(predictions, labels).mean()
   print('Test acc: {}'.format(test_acc))
   print('Inference time, dev+test: {}'.format(time.time() - start_time))
   print('-' * 20)
-
 
 if __name__ == '__main__':
   test_RNN()
