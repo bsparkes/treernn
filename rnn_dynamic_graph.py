@@ -24,7 +24,7 @@ class Config(object):
   early_stopping = 2
   anneal_threshold = 0.99
   anneal_by = 1.5
-  max_epochs = 2
+  max_epochs = 30
   lr = 0.01
   l2 = 0.02
 
@@ -41,7 +41,8 @@ class RNN_Model():
     # build vocab from training data
     self.vocab = utils.Vocab()
     train_sents = [t.get_words() for t in self.train_data]
-    self.vocab.construct(list(itertools.chain.from_iterable(train_sents)))
+    self.vocab.construct(list(itertools
+.chain.from_iterable(train_sents)))
 
   def inference(self, tree, predict_only_root=False):
     """For a given tree build the RNN models computation graph up to where it
