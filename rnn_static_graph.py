@@ -78,7 +78,7 @@ class RecursiveNetStaticGraph():
         return tf.expand_dims(tf.gather(embeddings, word_index), 0)
 
     def combine_children(left_tensor, right_tensor):
-      return tf.nn.relu(tf.matmul(tf.concat(1, [left_tensor, right_tensor]), W1) + b1)
+      return tf.nn.relu(tf.matmul(tf.concat([left_tensor, right_tensor], 1), W1) + b1)
 
     def loop_body(tensor_array, i):
       node_is_leaf = tf.gather(self.is_leaf_placeholder, i)
@@ -111,11 +111,11 @@ class RecursiveNetStaticGraph():
     included_indices = tf.where(tf.less(self.labels_placeholder, 2))
     self.full_loss = regularization_loss + tf.reduce_sum(
         tf.nn.sparse_softmax_cross_entropy_with_logits(
-            tf.gather(self.logits, included_indices), tf.gather(
+            logits=tf.gather(self.logits, included_indices), labels=tf.gather(
                 self.labels_placeholder, included_indices)))
     self.root_loss = tf.reduce_sum(
         tf.nn.sparse_softmax_cross_entropy_with_logits(
-            self.root_logits, self.labels_placeholder[-1:]))
+            logits=self.root_logits, labels=self.labels_placeholder[-1:]))
 
     # add training op
     self.train_op = tf.train.GradientDescentOptimizer(self.config.lr).minimize(
@@ -125,7 +125,7 @@ class RecursiveNetStaticGraph():
     nodes_list = []
     tree.leftTraverse(node, lambda node, args: args.append(node), nodes_list)
     node_to_index = OrderedDict()
-    for i in xrange(len(nodes_list)):
+    for i in range(len(nodes_list)):
       node_to_index[nodes_list[i]] = i
     feed_dict = {
         self.is_leaf_placeholder: [node.isLeaf for node in nodes_list],
@@ -209,7 +209,7 @@ class RecursiveNetStaticGraph():
     best_val_loss = float('inf')
     best_val_epoch = 0
     stopped = -1
-    for epoch in xrange(self.config.max_epochs):
+    for epoch in range(self.config.max_epochs):
       print('epoch %d' % epoch)
       if epoch == 0:
         train_acc, val_acc, loss_history, val_loss = self.run_epoch(
@@ -229,10 +229,13 @@ class RecursiveNetStaticGraph():
 
       #save if model has improved on val
       if val_loss < best_val_loss:
-        shutil.copyfile(SAVE_DIR + '%s.temp' % self.config.model_name,
-                        SAVE_DIR + '%s' % self.config.model_name)
-        best_val_loss = val_loss
-        best_val_epoch = epoch
+        if val_loss < best_val_loss:
+          shutil.copy2(SAVE_DIR + '%s.temp.meta' % self.config.model_name,
+                          SAVE_DIR + '%s.meta' % self.config.model_name)
+          shutil.copy2(SAVE_DIR + '%s.temp.index' % self.config.model_name,
+                          SAVE_DIR + '%s.index' % self.config.model_name)
+          best_val_loss = val_loss
+          best_val_epoch = epoch
 
       # if model has not imprvoved for a while stop
       if epoch - best_val_epoch > self.config.early_stopping:
@@ -251,7 +254,7 @@ class RecursiveNetStaticGraph():
 
   def make_conf(self, labels, predictions):
     confmat = np.zeros([2, 2])
-    for l, p in itertools.izip(labels, predictions):
+    for l, p in zip(labels, predictions):
       confmat[l, p] += 1
     return confmat
 

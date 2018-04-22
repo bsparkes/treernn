@@ -7,7 +7,7 @@ class Vocab(object):
         self.index_to_word = {}
         self.word_freq = defaultdict(int)
         self.total_words = 0
-        self.unknown = '<unk>'
+        self.unknown = '<$UNK>'
         self.add_word(self.unknown, count=0)
 
     def add_word(self, word, count=1):

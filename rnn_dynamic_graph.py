@@ -23,7 +23,7 @@ class Config(object):
   early_stopping = 2
   anneal_threshold = 0.99
   anneal_by = 1.5
-  max_epochs = 30
+  max_epochs = 2
   lr = 0.01
   l2 = 0.02
 
@@ -35,7 +35,7 @@ class RNN_Model():
   def load_data(self):
     """Loads train/dev/test data and builds vocabulary."""
     self.train_data, self.dev_data, self.test_data = tr.simplified_data(
-        51, 100, 200)
+        100, 100, 200)
 
     # build vocab from training data
     self.vocab = Vocab()
@@ -77,6 +77,7 @@ class RNN_Model():
           softmax.
     '''
     with tf.variable_scope('Embeddings'):
+      # defines the 'embeddings' variable
       tf.get_variable('embeddings', [len(self.vocab), self.config.embed_size])
     with tf.variable_scope('Composition'):
       tf.get_variable('W1',
@@ -90,6 +91,7 @@ class RNN_Model():
     with tf.variable_scope('Embeddings', reuse=True):
       embeddings = tf.get_variable('embeddings')
     with tf.device('/cpu:0'):
+      # create a tensor of length the embedding size with default values
       return tf.expand_dims(
           tf.nn.embedding_lookup(embeddings, self.vocab.encode(word)), 0)
 
@@ -159,8 +161,7 @@ class RNN_Model():
       W1 = tf.get_variable('W1')
     with tf.variable_scope('Projection', reuse=True):
       U = tf.get_variable('U')
-    return softmax_loss + self.config.l2 * (tf.nn.l2_loss(W1) + tf.nn.l2_loss(U)
-                                           )
+    return softmax_loss + self.config.l2 * (tf.nn.l2_loss(W1) + tf.nn.l2_loss(U))
 
   def training(self, loss_tensor):
     """Sets up the training Ops.
@@ -321,6 +322,11 @@ class RNN_Model():
     }
 
   def make_conf(self, labels, predictions):
+    # top left: label 0 pred 0
+    # top right: label 0 pred 1
+    # top left: correct neg sentiment
+    # top right: incorrect neg sentiment
+    # same for positive sentiment
     confmat = np.zeros([2, 2])
     for l, p in zip(labels, predictions):
       confmat[l, p] += 1
@@ -350,7 +356,7 @@ def test_RNN():
   stats = model.train(verbose=True)
   print('Training time: {}'.format(time.time() - start_time))
 
-  plot_loss_history(stats)
+  # plot_loss_history(stats)
 
   start_time = time.time()
   val_preds, val_losses = model.predict(
@@ -366,6 +372,12 @@ def test_RNN():
   predictions, _ = model.predict(model.test_data,
                                  SAVE_DIR + '%s.temp' % model.config.model_name)
   labels = [t.root.label for t in model.test_data]
+  print('labels:')
+  print(labels)
+  print('and predictions')
+  print(predictions)
+  print(len(predictions))
+  print('and the rest')
   print(model.make_conf(labels, predictions))
   test_acc = np.equal(predictions, labels).mean()
   print('Test acc: {}'.format(test_acc))
