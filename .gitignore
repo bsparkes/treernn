@@ -1,4 +1,6 @@
 *.pyc
 .idea
 .DS_Store
-.png
+*.png
+glove/
+weights/

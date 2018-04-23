@@ -1,5 +1,10 @@
-import os, sys, shutil, time, itertools
-import math, random
+import os
+import sys
+import shutil
+import time
+import itertools
+import math
+import random
 from collections import OrderedDict, defaultdict
 
 import numpy as np
@@ -18,7 +23,8 @@ class Config(object):
   """Holds model hyperparams and data information.
   Model objects are passed a Config() object at instantiation.
   """
-  embed_size = 35
+  # embed_size = 35
+  embed_size = 50
   label_size = 2
   early_stopping = 2
   anneal_threshold = 0.99
@@ -26,6 +32,9 @@ class Config(object):
   max_epochs = 30
   lr = 0.01
   l2 = 0.02
+  glove = False
+  glove_home = ''
+  glove_data = ''
 
   model_name = MODEL_STR % (embed_size, l2, lr)
 
@@ -36,7 +45,8 @@ class RecursiveNetStaticGraph():
     self.config = config
 
     # Load train data and build vocabulary
-    self.train_data, self.dev_data, self.test_data = tree.simplified_data(700,100,200)
+    self.train_data, self.dev_data, self.test_data = tree.simplified_data(
+        700, 100, 200)
     self.vocab = utils.Vocab()
     train_sents = [t.get_words() for t in self.train_data]
     self.vocab.construct(list(itertools.chain.from_iterable(train_sents)))
@@ -53,6 +63,16 @@ class RecursiveNetStaticGraph():
     self.labels_placeholder = tf.placeholder(
         tf.int32, (None), name='labels_placeholder')
 
+    # reconfig and set up for glove
+    if config.glove == True:
+      print('loading glove reps …')
+      glove_lookup = utils.glove2dict(os.path.join(config.glove_home, config.glove_data))
+      print('glove reps loaded')
+      self.config.embed_size = len(next(iter(glove_lookup.values())))
+      print('glove embedding size: {}'.format(self.config.embed_size))
+      glove_lookup_values = glove_lookup.keys()
+
+
     # add model variables
     with tf.variable_scope('Embeddings'):
       embeddings = tf.get_variable('embeddings',
@@ -62,8 +82,18 @@ class RecursiveNetStaticGraph():
                            [2 * self.config.embed_size, self.config.embed_size])
       b1 = tf.get_variable('b1', [1, self.config.embed_size])
     with tf.variable_scope('Projection'):
-      U = tf.get_variable('U', [self.config.embed_size, self.config.label_size])
+      U = tf.get_variable(
+          'U', [self.config.embed_size, self.config.label_size])
       bs = tf.get_variable('bs', [1, self.config.label_size])
+
+
+    # adjust word vecs for glove
+    if config.glove == True:
+      print('adjusting word vecs…')
+      for word in self.vocab.index_to_word.values():
+        if word in glove_lookup_values:
+          embeddings[self.vocab.word_to_index[word]].assign(tf.convert_to_tensor(glove_lookup[word], dtype=np.float32))
+      print('finished adjusting word vecs.')
 
     # build recursive graph
 
@@ -95,7 +125,7 @@ class RecursiveNetStaticGraph():
       i = tf.add(i, 1)
       return tensor_array, i
 
-    loop_cond = lambda tensor_array, i: \
+    def loop_cond(tensor_array, i): return \
         tf.less(i, tf.squeeze(tf.shape(self.is_leaf_placeholder)))
     self.tensor_array, _ = tf.while_loop(
         loop_cond, loop_body, [tensor_array, 0], parallel_iterations=1)
@@ -221,27 +251,27 @@ class RecursiveNetStaticGraph():
       train_acc_history.append(train_acc)
       val_acc_history.append(val_acc)
 
-      #lr annealing
+      # lr annealing
       epoch_loss = np.mean(loss_history)
       if epoch_loss > prev_epoch_loss * self.config.anneal_threshold:
         self.config.lr /= self.config.anneal_by
         print('annealed lr to %f' % self.config.lr)
       prev_epoch_loss = epoch_loss
 
-      #save if model has improved on val
+      # save if model has improved on val
       if val_loss < best_val_loss:
         if val_loss < best_val_loss:
           shutil.copy2(SAVE_DIR + '%s.temp.meta' % self.config.model_name,
-                          SAVE_DIR + '%s.meta' % self.config.model_name)
+                       SAVE_DIR + '%s.meta' % self.config.model_name)
           shutil.copy2(SAVE_DIR + '%s.temp.index' % self.config.model_name,
-                          SAVE_DIR + '%s.index' % self.config.model_name)
+                       SAVE_DIR + '%s.index' % self.config.model_name)
           best_val_loss = val_loss
           best_val_epoch = epoch
 
       # if model has not imprvoved for a while stop
       if epoch - best_val_epoch > self.config.early_stopping:
         stopped = epoch
-        #break
+        # break
     if verbose:
       sys.stdout.write('\r')
       sys.stdout.flush()
@@ -268,13 +298,19 @@ def plot_loss_history(stats):
   plt.savefig('loss_history.png')
   plt.show()
 
+
 def test_RNN():
   """Test RNN model implementation.
   """
   config = Config()
+  config.glove=True
+  config.glove_home='glove'
+  # config.glove_data='glove.6B.50d.txt'
+  config.glove_data='glove.6B.100d.txt'
+  # config.glove_data='glove.840B.300d.txt'
   model = RecursiveNetStaticGraph(config)
   #graph_def = tf.get_default_graph().as_graph_def()
-  #with open('static_graph.pb', 'wb') as f:
+  # with open('static_graph.pb', 'wb') as f:
   #  f.write(graph_def.SerializeToString())
 
   start_time = time.time()

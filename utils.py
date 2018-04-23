@@ -1,3 +1,6 @@
+import sys
+import csv
+import numpy as np
 from collections import defaultdict
 
 
@@ -49,3 +52,23 @@ def scores(confmat):
   print('   negative       %.2f      %.2f      %.2f' % (negPrec, negReca, negEff1))
   print('\n')
   print('avg / total       %.2f      %.2f      %.2f' % ((posPrec + negPrec)/2, (posReca + negReca)/2, (posEff1 + negEff1)/2))
+
+# glove2dict from https://github.com/cgpotts/cs224u
+
+def glove2dict(src_filename):
+    """GloVe Reader.
+
+    Parameters
+    ----------
+    src_filename : str
+        Full path to the GloVe file to be processed.
+
+    Returns
+    -------
+    dict
+        Mapping words to their GloVe vectors.
+
+    """
+    with open(src_filename, encoding='utf8') as f:
+        reader = csv.reader(f, delimiter=' ', quoting=csv.QUOTE_NONE)
+        return {line[0]: np.array(list(map(float, line[1: ]))) for line in reader}

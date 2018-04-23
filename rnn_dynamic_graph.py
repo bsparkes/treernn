@@ -1,5 +1,10 @@
-import os, sys, shutil, time, itertools
-import math, random
+import os
+import sys
+import shutil
+import time
+import itertools
+import math
+import random
 from collections import OrderedDict
 
 import numpy as np
@@ -36,13 +41,13 @@ class RNN_Model():
   def load_data(self):
     """Loads train/dev/test data and builds vocabulary."""
     self.train_data, self.dev_data, self.test_data = tr.simplified_data(
-        100, 100, 200)
+        700, 100, 200)
 
     # build vocab from training data
     self.vocab = utils.Vocab()
     train_sents = [t.get_words() for t in self.train_data]
     self.vocab.construct(list(itertools
-.chain.from_iterable(train_sents)))
+                              .chain.from_iterable(train_sents)))
 
   def inference(self, tree, predict_only_root=False):
     """For a given tree build the RNN models computation graph up to where it
@@ -124,7 +129,8 @@ class RNN_Model():
     else:
       node_tensors.update(self.add_model(node.left))
       node_tensors.update(self.add_model(node.right))
-      node_input = tf.concat([node_tensors[node.left], node_tensors[node.right]], 1)
+      node_input = tf.concat(
+          [node_tensors[node.left], node_tensors[node.right]], 1)
       curr_node_tensor = tf.nn.relu(tf.matmul(node_input, W1) + b1)
 
     node_tensors[node] = curr_node_tensor
@@ -292,26 +298,26 @@ class RNN_Model():
       train_acc_history.append(train_acc)
       val_acc_history.append(val_acc)
 
-      #lr annealing
+      # lr annealing
       epoch_loss = np.mean(loss_history)
       if epoch_loss > prev_epoch_loss * self.config.anneal_threshold:
         self.config.lr /= self.config.anneal_by
         print('annealed lr to %f' % self.config.lr)
       prev_epoch_loss = epoch_loss
 
-      #save if model has improved on val
+      # save if model has improved on val
       if val_loss < best_val_loss:
         shutil.copy2(SAVE_DIR + '%s.temp.meta' % self.config.model_name,
-                        SAVE_DIR + '%s.meta' % self.config.model_name)
+                     SAVE_DIR + '%s.meta' % self.config.model_name)
         shutil.copy2(SAVE_DIR + '%s.temp.index' % self.config.model_name,
-                        SAVE_DIR + '%s.index' % self.config.model_name)
+                     SAVE_DIR + '%s.index' % self.config.model_name)
         best_val_loss = val_loss
         best_val_epoch = epoch
 
       # if model has not imprvoved for a while stop
       if epoch - best_val_epoch > self.config.early_stopping:
         stopped = epoch
-        #break
+        # break
     if verbose:
       sys.stdout.write('\r')
       sys.stdout.flush()
