@@ -1,6 +1,6 @@
 ## Efficient recursive (tree-structured) neural networks in TensorFlow
 
-(This repository is a clone from [here](https://github.com/erickrf/treernn), updating the code to work with python 3 and tensorflow 1.7)
+(This repository is a clone from [here](https://github.com/erickrf/treernn), with a naive update of the code to work with python 3 and tensorflow 1.7 and a few other additions)
 
 Note: this tutorial assumes you are already familiar with [recursive neural networks](http://cs224d.stanford.edu/lectures/CS224d-Lecture10.pdf) and the basics of [TensorFlow programming](https://www.tensorflow.org/versions/r0.10/tutorials/index.html), otherwise it may be helpful to read up on both first.
 The tutorial and code follow the tree-net assignment of the (fantastic) Stanford CS224D class, and would be most useful to those who have attempted it on their own.

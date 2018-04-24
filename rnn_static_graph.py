@@ -24,7 +24,7 @@ class Config(object):
   Model objects are passed a Config() object at instantiation.
   """
   # embed_size = 35
-  embed_size = 50
+  embed_size = 100
   label_size = 2
   early_stopping = 2
   anneal_threshold = 0.99
@@ -33,8 +33,9 @@ class Config(object):
   lr = 0.01
   l2 = 0.02
   glove = False
-  glove_home = ''
-  glove_data = ''
+  vec = False
+  vec_home = ''
+  vec_data = ''
 
   model_name = MODEL_STR % (embed_size, l2, lr)
 
@@ -63,14 +64,17 @@ class RecursiveNetStaticGraph():
     self.labels_placeholder = tf.placeholder(
         tf.int32, (None), name='labels_placeholder')
 
-    # reconfig and set up for glove
-    if config.glove == True:
-      print('loading glove reps …')
-      glove_lookup = utils.glove2dict(os.path.join(config.glove_home, config.glove_data))
-      print('glove reps loaded')
-      self.config.embed_size = len(next(iter(glove_lookup.values())))
-      print('glove embedding size: {}'.format(self.config.embed_size))
-      glove_lookup_values = glove_lookup.keys()
+    # reconfig and set up for vecs
+    if config.vec == True:
+      print('loading vec reps from %s …'% config.vec_data)
+      if config.glove == True:
+        vec_lookup = utils.glove2dict(os.path.join(config.vec_home, config.vec_data))
+      else:
+        vec_lookup = utils.vec2dict(os.path.join(config.vec_home, config.vec_data))
+      print('vec reps loaded')
+      self.config.embed_size = len(next(iter(vec_lookup.values())))
+      print('vec embedding size: {}'.format(self.config.embed_size))
+      vec_lookup_values = vec_lookup.keys()
 
 
     # add model variables
@@ -87,12 +91,12 @@ class RecursiveNetStaticGraph():
       bs = tf.get_variable('bs', [1, self.config.label_size])
 
 
-    # adjust word vecs for glove
-    if config.glove == True:
+    # adjust word vecs for vec
+    if config.vec == True:
       print('adjusting word vecs…')
       for word in self.vocab.index_to_word.values():
-        if word in glove_lookup_values:
-          embeddings[self.vocab.word_to_index[word]].assign(tf.convert_to_tensor(glove_lookup[word], dtype=np.float32))
+        if word in vec_lookup_values:
+          embeddings[self.vocab.word_to_index[word]].assign(tf.convert_to_tensor(vec_lookup[word], dtype=np.float32))
       print('finished adjusting word vecs.')
 
     # build recursive graph
@@ -226,6 +230,7 @@ class RecursiveNetStaticGraph():
     train_acc = np.equal(train_preds, train_labels).mean()
     val_acc = np.equal(val_preds, val_labels).mean()
 
+    print('\n')
     print('Training acc (only root node): {}'.format(train_acc))
     print('Valiation acc (only root node): {}'.format(val_acc))
     print(self.make_conf(train_labels, train_preds))
@@ -303,11 +308,17 @@ def test_RNN():
   """Test RNN model implementation.
   """
   config = Config()
-  config.glove=True
-  config.glove_home='glove'
-  # config.glove_data='glove.6B.50d.txt'
-  config.glove_data='glove.6B.100d.txt'
-  # config.glove_data='glove.840B.300d.txt'
+  # config.vec=True
+  # config.vec_home='glove'
+  # config.vec_data='wiki.en.vec'
+  # config.vec_data='glove.840B.300d.txt'
+  # config.glove=True
+  # config.vec_data='glove.6B.50d.txt'
+  # config.vec_data='glove.6B.100d.txt'
+  # config.vec_data='fasttext-crawl-300d-2M.vec'
+  # use vec2dictAlt
+  # config.vec_data='lexvec.commoncrawl.300d.W+C.pos.neg3.vectors'
+
   model = RecursiveNetStaticGraph(config)
   #graph_def = tf.get_default_graph().as_graph_def()
   # with open('static_graph.pb', 'wb') as f:

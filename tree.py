@@ -117,7 +117,7 @@ def loadTrees(dataSet='train'):
   Loads training trees. Maps leaf node words to word ids.
   """
   file = 'trees/%s.txt' % dataSet
-  print("Loading %s trees.." % dataSet)
+  print("Loading %s trees …" % dataSet)
   with open(file, 'r') as fid:
     trees = [Tree(l) for l in fid.readlines()]
 
@@ -132,6 +132,9 @@ def simplified_data(num_train, num_dev, num_test):
   # filter extreme trees
   pos_trees = [t for t in trees if t.root.label == 4]
   neg_trees = [t for t in trees if t.root.label == 0]
+  # only filter neutral trees
+  # pos_trees = [t for t in trees if t.root.label > 2]
+  # neg_trees = [t for t in trees if t.root.label < 2]
 
   # binarize labels
   binarize_labels(pos_trees)

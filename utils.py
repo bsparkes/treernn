@@ -48,27 +48,76 @@ def scores(confmat):
   negReca = confmat[0][0] / (confmat[0][0] + confmat[0][1])
   negEff1 = (2 * negPrec * negReca) / (negPrec + negReca)
   print('             precision    recall  f1-score')
-  print('   positive       %.2f      %.2f      %.2f' % (posPrec, posReca, posEff1))
-  print('   negative       %.2f      %.2f      %.2f' % (negPrec, negReca, negEff1))
+  print('   positive       %.2f      %.2f      %.2f' %
+        (posPrec, posReca, posEff1))
+  print('   negative       %.2f      %.2f      %.2f' %
+        (negPrec, negReca, negEff1))
   print('\n')
-  print('avg / total       %.2f      %.2f      %.2f' % ((posPrec + negPrec)/2, (posReca + negReca)/2, (posEff1 + negEff1)/2))
+  print('avg / total       %.2f      %.2f      %.2f' %
+        ((posPrec + negPrec)/2, (posReca + negReca)/2, (posEff1 + negEff1)/2))
 
 # glove2dict from https://github.com/cgpotts/cs224u
 
+
 def glove2dict(src_filename):
-    """GloVe Reader.
+  """GloVe Reader.
 
-    Parameters
-    ----------
-    src_filename : str
-        Full path to the GloVe file to be processed.
+  Parameters
+  ----------
+  src_filename : str
+      Full path to the GloVe file to be processed.
 
-    Returns
-    -------
-    dict
-        Mapping words to their GloVe vectors.
+  Returns
+  -------
+  dict
+      Mapping words to their GloVe vectors.
 
-    """
-    with open(src_filename, encoding='utf8') as f:
-        reader = csv.reader(f, delimiter=' ', quoting=csv.QUOTE_NONE)
-        return {line[0]: np.array(list(map(float, line[1: ]))) for line in reader}
+  """
+  with open(src_filename, encoding='utf8') as f:
+    reader = csv.reader(f, delimiter=' ', quoting=csv.QUOTE_NONE)
+    return {line[0]: np.array(list(map(float, line[1:]))) for line in reader}
+
+
+def vec2dict(src_filename, cut=-1):
+  """vec Reader.
+
+  Parameters
+  ----------
+  src_filename : str
+      Full path to the vec file to be processed.
+
+  Returns
+  -------
+  dict
+      Mapping words to their vec vectors.
+
+  """
+  with open(src_filename, encoding='utf8') as f:
+    reader = csv.reader(f, delimiter=' ', quoting=csv.QUOTE_NONE)
+    vecDict = {}
+    for line in reader:
+      if len(line) > 2:
+        vecDict[line[0]] = np.array(list(map(float, line[1: -1])))
+    return vecDict
+
+def vec2dictAlt(src_filename, cut=-1):
+  """vec Reader.
+
+  Parameters
+  ----------
+  src_filename : str
+      Full path to the vec file to be processed.
+
+  Returns
+  -------
+  dict
+      Mapping words to their vec vectors.
+
+  """
+  with open(src_filename, encoding='utf8') as f:
+    reader = csv.reader(f, delimiter=' ', quoting=csv.QUOTE_NONE)
+    vecDict = {}
+    for line in reader:
+      if len(line) > 2:
+        vecDict[line[0]] = np.array(list(map(float, line[1:])))
+    return vecDict
